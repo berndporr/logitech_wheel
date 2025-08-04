@@ -20,7 +20,7 @@ class LogiWheel {
 
 public:
 
-    void start(std::string device = "/dev/input/by-id/usb-Logitech_Logitech_Racing_Wheel-joystick") {
+    void start(std::string device = "/dev/input/by-id/usb-Logitech_Logitech_Racing_Wheel-event-joystick") {
         fd = open(device.c_str(), O_RDONLY);
 	
 	if (fd == -1) {
@@ -28,6 +28,7 @@ public:
 	    return;
 	}
 	if (running) return;
+//	run();
 	eventThread = std::thread(&LogiWheel::run, this);
     }
     
@@ -36,20 +37,18 @@ public:
 	while (running) 
 	{
 	    int r = read(fd, &event, sizeof(event));
+	    printf("e = %d ",event.type);
 	    if (r < 0) {
 		fprintf(stderr,"Error = %d\n",r);
 		running = false;
 		return;
 	    }
-	    switch (event.type) {
-            case JS_EVENT_BUTTON:
-                break;
-            case JS_EVENT_AXIS:
-		int n = event.code;
-		int v = event.value;
-		printf("%d %d\n",n,v);
-                break;
-	    }
+	    if (event.type == EV_ABS && event.code < ABS_TOOL_WIDTH)
+		{
+		    int n = event.code;
+		    int v = event.value;
+		    printf("Axis: %d %d\n",n,v);
+		}
 	    fflush(stdout);
 	}
 	running = false;
@@ -60,6 +59,7 @@ public:
     void stop() {
 	running = false;
 	close(fd);
+	eventThread.join();
     }
     
 };
