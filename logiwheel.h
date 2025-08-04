@@ -4,7 +4,6 @@
 #include <thread>
 #include <functional>
 #include <string>
-#include <poll.h>
 #include <fcntl.h>
 #include <stdio.h>
 #include <unistd.h>
@@ -13,19 +12,10 @@
 
 class LogiWheel {
 
-    bool running = false;
-    int fd = -1;
-    input_event event;
-    std::thread eventThread;
-
-    using CallbackFunction = std::function<void(float)>;
-
-    CallbackFunction steeringCallback;
-    CallbackFunction throttleCallback;
-    CallbackFunction brakeCallback;
-
 public:
 
+    using CallbackFunction = std::function<void(float)>;
+    
     void registerSteeringCallback(CallbackFunction cb) {
 	steeringCallback = cb;
     }
@@ -39,16 +29,24 @@ public:
     }
 
     void start(std::string device = "/dev/input/by-id/usb-Logitech_Logitech_Racing_Wheel-event-joystick") {
+	if (running) return;
+
         fd = open(device.c_str(), O_RDONLY);
 	
 	if (fd == -1) {
 	    perror("Could not open joystick");
 	    return;
 	}
-	if (running) return;
 	eventThread = std::thread(&LogiWheel::run, this);
     }
     
+    void stop() {
+	running = false;
+	eventThread.join();
+    }
+
+private:
+
     void run() {
 	running = true;
 	while (running) 
@@ -58,8 +56,8 @@ public:
 	    FD_ZERO(&s_wr);
 	    FD_ZERO(&s_ex);
 	    FD_SET(fd, &s_rd);
-	    timeval t = {1,1};
-	    int r = select(fd+1, &s_rd, &s_wr, &s_ex, &t);
+	    timeval timeout = {1,1};
+	    int r = select(fd+1, &s_rd, &s_wr, &s_ex, &timeout);
 	    if (r > 0) {
 		r = read(fd, &event, sizeof(event));
 		if (r < 0) {
@@ -87,12 +85,15 @@ public:
 	running = false;
 	close(fd);
     }
+
+    bool running = false;
+    int fd = -1;
+    input_event event;
+    std::thread eventThread;
     
-    void stop() {
-	running = false;
-	eventThread.join();
-    }
-    
+    CallbackFunction steeringCallback;
+    CallbackFunction throttleCallback;
+    CallbackFunction brakeCallback;
 };
 
 #endif
