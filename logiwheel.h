@@ -63,7 +63,9 @@ public:
 	    if (r > 0) {
 		r = read(fd, &event, sizeof(event));
 		if (r < 0) {
+		    fprintf(stderr,"Logi Wheel err = %d\n",r);
 		    running = false;
+		    close(fd);
 		    return;
 		}
 		if (event.type == EV_ABS && event.code < ABS_TOOL_WIDTH) {
@@ -83,13 +85,11 @@ public:
 	    } else if (r < 0) running = false;
 	}
 	running = false;
+	close(fd);
     }
-    
-    
     
     void stop() {
 	running = false;
-	close(fd);
 	eventThread.join();
     }
     
