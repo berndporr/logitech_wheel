@@ -9,6 +9,6 @@ endif()
 # Project Name
 project(LogiWheelEventHandler)
 # Add executable
-add_executable(demo example.cpp)
+add_executable(demo demo.cpp)
 # Include directories
 target_include_directories(demo PRIVATE .)

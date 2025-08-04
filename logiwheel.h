@@ -1,15 +1,15 @@
+#ifndef __LOGIWHEEL
+#define __LOGIWHEEL
+
 #include <thread>
-#include <atomic>
 #include <functional>
 #include <string>
-
-/**
- * https://www.kernel.org/doc/Documentation/input/joystick-api.txt
- **/
+#include <poll.h>
 #include <fcntl.h>
 #include <stdio.h>
 #include <unistd.h>
 #include <linux/joystick.h>
+#include <sys/select.h>
 
 class LogiWheel {
 
@@ -18,7 +18,25 @@ class LogiWheel {
     input_event event;
     std::thread eventThread;
 
+    using CallbackFunction = std::function<void(float)>;
+
+    CallbackFunction steeringCallback;
+    CallbackFunction throttleCallback;
+    CallbackFunction brakeCallback;
+
 public:
+
+    void registerSteeringCallback(CallbackFunction cb) {
+	steeringCallback = cb;
+    }
+
+    void registerThrottleCallback(CallbackFunction cb) {
+	throttleCallback = cb;
+    }
+
+    void registerBrakeCallback(CallbackFunction cb) {
+	brakeCallback = cb;
+    }
 
     void start(std::string device = "/dev/input/by-id/usb-Logitech_Logitech_Racing_Wheel-event-joystick") {
         fd = open(device.c_str(), O_RDONLY);
@@ -28,7 +46,6 @@ public:
 	    return;
 	}
 	if (running) return;
-//	run();
 	eventThread = std::thread(&LogiWheel::run, this);
     }
     
@@ -36,20 +53,34 @@ public:
 	running = true;
 	while (running) 
 	{
-	    int r = read(fd, &event, sizeof(event));
-	    printf("e = %d ",event.type);
-	    if (r < 0) {
-		fprintf(stderr,"Error = %d\n",r);
-		running = false;
-		return;
-	    }
-	    if (event.type == EV_ABS && event.code < ABS_TOOL_WIDTH)
-		{
-		    int n = event.code;
-		    int v = event.value;
-		    printf("Axis: %d %d\n",n,v);
+	    fd_set s_rd, s_wr, s_ex;
+	    FD_ZERO(&s_rd);
+	    FD_ZERO(&s_wr);
+	    FD_ZERO(&s_ex);
+	    FD_SET(fd, &s_rd);
+	    timeval t = {1,1};
+	    int r = select(fd+1, &s_rd, &s_wr, &s_ex, &t);
+	    if (r > 0) {
+		r = read(fd, &event, sizeof(event));
+		if (r < 0) {
+		    running = false;
+		    return;
 		}
-	    fflush(stdout);
+		if (event.type == EV_ABS && event.code < ABS_TOOL_WIDTH) {
+		    int v = event.value;
+		    switch (event.code) {
+		    case 0:
+			if (steeringCallback) steeringCallback((v - 512)/512.0);
+			break;
+		    case 1:
+			if (throttleCallback) throttleCallback(1-v/256.0);
+			break;
+		    case 2:
+			if (brakeCallback) brakeCallback(1-v/256.0);
+			break;
+		    }
+		}
+	    } else if (r < 0) running = false;
 	}
 	running = false;
     }
@@ -63,3 +94,5 @@ public:
     }
     
 };
+
+#endif
