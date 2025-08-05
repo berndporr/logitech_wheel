@@ -40,4 +40,6 @@ and stop it with
 stop();
 ```
 
-## Credit: Bernd Porr, mail@berndporr.me.uk
+## Credit
+
+Bernd Porr, mail@berndporr.me.uk
