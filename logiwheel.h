@@ -51,13 +51,10 @@ private:
 	running = true;
 	while (running) 
 	{
-	    fd_set s_rd, s_wr, s_ex;
+	    fd_set s_rd;
 	    FD_ZERO(&s_rd);
-	    FD_ZERO(&s_wr);
-	    FD_ZERO(&s_ex);
 	    FD_SET(fd, &s_rd);
-	    timeval timeout = {1,1};
-	    int r = select(fd+1, &s_rd, &s_wr, &s_ex, &timeout);
+	    int r = select(fd+1, &s_rd, NULL, NULL, &timeout);
 	    if (r > 0) {
 		r = read(fd, &event, sizeof(event));
 		if (r < 0) {
@@ -90,7 +87,8 @@ private:
     int fd = -1;
     input_event event;
     std::thread eventThread;
-    
+    timeval timeout = {1,1};
+
     CallbackFunction steeringCallback;
     CallbackFunction throttleCallback;
     CallbackFunction brakeCallback;
