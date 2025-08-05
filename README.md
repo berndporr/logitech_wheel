@@ -13,7 +13,13 @@ Run the demo:
 ./demo
 ```
 
-It has three callbacks for throttle, braking and steering.
+![alt tag](screenshot.jpg)
+
+## How to use
+
+Include `logiwheel.h` into your project.
+
+The class `LogiWheel` has three callbacks for throttle, braking and steering.
 
 ```
     void registerSteeringCallback(CallbackFunction cb)
