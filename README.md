@@ -1,5 +1,7 @@
 # Logitech Racing Wheel C++ driver
 
+![alt tag](wheel.jpg)
+
 Compile with
 
 ```
