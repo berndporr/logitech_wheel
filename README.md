@@ -47,8 +47,8 @@ stop();
 
 ## FastDDS broadcasting of the events
 
-The subdirectory [remote_control](remote_control/) shows how to broadcast the wheel events to for example
-remote control a robot via WIFI.
+The subdirectory [remote_control](remote_control/) shows how to broadcast the steering wheel events, 
+for example, to control a robot over a WIFI connection.
 
 ## Credit
 
