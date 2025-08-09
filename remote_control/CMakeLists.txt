@@ -9,16 +9,18 @@ set (CMAKE_CXX_STANDARD 17)
 
 # Create a library for the message / topic
 
-set(LIBDDSIDL ${CMAKE_SOURCE_DIR}/brake.idl  ${CMAKE_SOURCE_DIR}/steering.idl  ${CMAKE_SOURCE_DIR}/throttle.idl)
+set(LIBDDSIDL ${CMAKE_SOURCE_DIR}/brake.idl  ${CMAKE_SOURCE_DIR}/steering.idl  ${CMAKE_SOURCE_DIR}/throttle.idl ${CMAKE_SOURCE_DIR}/button.idl)
 
 execute_process(COMMAND fastddsgen ${LIBDDSIDL})
 
 add_library(FastDDSMsg STATIC
 	      brake.cxx brakePubSubTypes.cxx
 	      steering.cxx steeringPubSubTypes.cxx
-	      throttle.cxx throttlePubSubTypes.cxx )
+	      throttle.cxx throttlePubSubTypes.cxx
+	      button.cxx buttonPubSubTypes.cxx
+	      )
 
-target_include_directories(FastDDSMsg PRIVATE ..)
+include_directories(. ..)
 
 add_custom_target(
     ddsmessages
@@ -34,5 +36,5 @@ target_link_libraries(remote fastcdr fastrtps FastDDSMsg)
 
 
 # Subscriber
-add_executable(test_robo_msg_sub test_robo_msg_sub.cpp)
-target_link_libraries(test_robo_msg_sub fastcdr fastrtps FastDDSMsg)
+add_executable(demo_receiver demo_receiver.cpp)
+target_link_libraries(demo_receiver fastcdr fastrtps FastDDSMsg)

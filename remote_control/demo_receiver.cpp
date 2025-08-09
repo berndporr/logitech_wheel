@@ -16,6 +16,7 @@
 #include "brakePubSubTypes.h"
 #include "steeringPubSubTypes.h"
 #include "throttlePubSubTypes.h"
+#include "buttonPubSubTypes.h"
 
 #include <chrono>
 #include <thread>
@@ -35,37 +36,30 @@ class RobotSubscriber
 {
 private:
 
-    DomainParticipant* participant_ = nullptr;
+    DomainParticipant* participant = nullptr;
 
-    Subscriber* subscriber_ = nullptr;
+    Subscriber* subscriber = nullptr;
 
     DataReader* readerSteering = nullptr;
     DataReader* readerBrake = nullptr;
     DataReader* readerThrottle = nullptr;
+    DataReader* readerButton = nullptr;
 
     Topic* topicSteering = nullptr;
     Topic* topicBrake = nullptr;
     Topic* topicThrottle = nullptr;
+    Topic* topicButton = nullptr;
 
     TypeSupport typeSteering;
     TypeSupport typeBrake;
     TypeSupport typeThrottle;
+    TypeSupport typeButton;
 
     class SteeringListener : public DataReaderListener
     {
     public:
         SteeringListener() {}
         ~SteeringListener() override {}
-
-        void on_subscription_matched(
-	    DataReader*,
-	    const SubscriptionMatchedStatus& info) override
-	    {
-		if (info.current_count_change == 1)
-		    std::cout << "Steering subscriber matched." << std::endl;
-		else if (info.current_count_change == -1)
-		    std::cout << "Steering subscriber unmatched." << std::endl;
-	    }
 
 	// callback
         void on_data_available(DataReader* reader) override
@@ -89,16 +83,6 @@ private:
         ThrottleListener() {}
         ~ThrottleListener() override {}
 
-        void on_subscription_matched(
-	    DataReader*,
-	    const SubscriptionMatchedStatus& info) override
-	    {
-		if (info.current_count_change == 1)
-		    std::cout << "Throttle subscriber matched." << std::endl;
-		else if (info.current_count_change == -1)
-		    std::cout << "Throttle subscriber unmatched." << std::endl;
-	    }
-
 	// callback
         void on_data_available(DataReader* reader) override
 	    {
@@ -121,16 +105,6 @@ private:
         BrakeListener() {}
         ~BrakeListener() override {}
 
-        void on_subscription_matched(
-	    DataReader*,
-	    const SubscriptionMatchedStatus& info) override
-	    {
-		if (info.current_count_change == 1)
-		    std::cout << "Brake subscriber matched." << std::endl;
-		else if (info.current_count_change == -1)
-		    std::cout << "Brake subscriber unmatched." << std::endl;
-	    }
-
 	// callback
         void on_data_available(DataReader* reader) override
 	    {
@@ -147,24 +121,53 @@ private:
 	    }
     } listenerBrake;
 
+    class ButtonListener : public DataReaderListener
+    {
+    public:
+        ButtonListener() {}
+        ~ButtonListener() override {}
+
+	// callback
+        void on_data_available(DataReader* reader) override
+	    {
+		SampleInfo info;
+		ButtonMsg msg;
+		if (reader->take_next_sample(&msg, &info) == ReturnCode_t::RETCODE_OK)
+		{
+		    if (info.valid_data)
+		    {
+			std::cout << "Button: " << msg.index()
+				  << " RECEIVED." << std::endl;
+		    }
+		}
+	    }
+    } listenerButton;
+
 public:
 
     RobotSubscriber() : typeSteering(new SteeringMsgPubSubType()),
 			typeBrake(new BrakeMsgPubSubType()),
-			typeThrottle(new ThrottleMsgPubSubType()) {}
+			typeThrottle(new ThrottleMsgPubSubType()),
+			typeButton(new ButtonMsgPubSubType())
+	{}
 
     virtual ~RobotSubscriber()
 	{
-	    if (readerSteering != nullptr) {
-		subscriber_->delete_datareader(readerSteering);
-	    }
-	    if (topicSteering != nullptr) {
-		participant_->delete_topic(topicSteering);
-	    }
-	    if (subscriber_ != nullptr) {
-		participant_->delete_subscriber(subscriber_);
-	    }
-	    DomainParticipantFactory::get_instance()->delete_participant(participant_);
+	    if (readerSteering != nullptr) subscriber->delete_datareader(readerSteering);
+	    if (topicSteering != nullptr) participant->delete_topic(topicSteering);
+
+	    if (readerBrake != nullptr) subscriber->delete_datareader(readerBrake);
+	    if (topicBrake != nullptr) participant->delete_topic(topicBrake);
+
+	    if (readerThrottle != nullptr) subscriber->delete_datareader(readerThrottle);
+	    if (topicThrottle != nullptr) participant->delete_topic(topicThrottle);
+
+	    if (readerButton != nullptr) subscriber->delete_datareader(readerButton);
+	    if (topicButton != nullptr) participant->delete_topic(topicButton);
+
+	    if (subscriber != nullptr) participant->delete_subscriber(subscriber);
+
+	    DomainParticipantFactory::get_instance()->delete_participant(participant);
 	}
 
     //!Initialize the subscriber
@@ -172,45 +175,54 @@ public:
 	{
 	    DomainParticipantQos participantQos;
 	    participantQos.name("Participant_subscriber");
-	    participant_ = DomainParticipantFactory::get_instance()->create_participant(0, participantQos);
+	    participant = DomainParticipantFactory::get_instance()->create_participant(0, participantQos);
 
-	    if (participant_ == nullptr)
+	    if (participant == nullptr)
 	    {
 		return false;
 	    }
 
 	    // Register the Types
-	    typeSteering.register_type(participant_);
-	    typeBrake.register_type(participant_);
-	    typeThrottle.register_type(participant_);
+	    typeSteering.register_type(participant);
+	    typeBrake.register_type(participant);
+	    typeThrottle.register_type(participant);
+	    typeButton.register_type(participant);
 
 	    // Create the Subscriber
-	    subscriber_ = participant_->create_subscriber(SUBSCRIBER_QOS_DEFAULT, nullptr);
-	    if (subscriber_ == nullptr) return false;
+	    subscriber = participant->create_subscriber(SUBSCRIBER_QOS_DEFAULT, nullptr);
+	    if (subscriber == nullptr) return false;
 
 	    // Topic Steering
-	    topicSteering = participant_->create_topic("SteeringTopic", "SteeringMsg", TOPIC_QOS_DEFAULT);
+	    topicSteering = participant->create_topic("SteeringTopic", "SteeringMsg", TOPIC_QOS_DEFAULT);
 	    if (topicSteering == nullptr) return false;
-	    readerSteering = subscriber_->create_datareader(topicSteering,
+	    readerSteering = subscriber->create_datareader(topicSteering,
 							    DATAREADER_QOS_DEFAULT,
 							    &listenerSteering);
 	    if (readerSteering == nullptr) return false;
 
 	    // Topic Throttle
-	    topicThrottle = participant_->create_topic("ThrottleTopic", "ThrottleMsg", TOPIC_QOS_DEFAULT);
+	    topicThrottle = participant->create_topic("ThrottleTopic", "ThrottleMsg", TOPIC_QOS_DEFAULT);
 	    if (topicThrottle == nullptr) return false;
-	    readerThrottle = subscriber_->create_datareader(topicThrottle,
+	    readerThrottle = subscriber->create_datareader(topicThrottle,
 							    DATAREADER_QOS_DEFAULT,
 							    &listenerThrottle);
 	    if (readerThrottle == nullptr) return false;
 
 	    // Topic Brake
-	    topicBrake = participant_->create_topic("BrakeTopic", "BrakeMsg", TOPIC_QOS_DEFAULT);
+	    topicBrake = participant->create_topic("BrakeTopic", "BrakeMsg", TOPIC_QOS_DEFAULT);
 	    if (topicBrake == nullptr) return false;
-	    readerBrake = subscriber_->create_datareader(topicBrake,
+	    readerBrake = subscriber->create_datareader(topicBrake,
 							 DATAREADER_QOS_DEFAULT,
 							 &listenerBrake);
 	    if (readerBrake == nullptr) return false;
+
+	    // Topic Button
+	    topicButton = participant->create_topic("ButtonTopic", "ButtonMsg", TOPIC_QOS_DEFAULT);
+	    if (topicButton == nullptr) return false;
+	    readerButton = subscriber->create_datareader(topicButton,
+							 DATAREADER_QOS_DEFAULT,
+							 &listenerButton);
+	    if (readerButton == nullptr) return false;
 
 	    return true;
 	}

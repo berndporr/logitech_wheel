@@ -16,6 +16,7 @@
 #include "brakePubSubTypes.h"
 #include "steeringPubSubTypes.h"
 #include "throttlePubSubTypes.h"
+#include "buttonPubSubTypes.h"
 
 #include <chrono>
 #include <thread>
@@ -35,37 +36,42 @@ class RemotePublisher
 {
 private:
 
-    DomainParticipant* participant_ = nullptr;
+    DomainParticipant* participant = nullptr;
 
-    Publisher* publisher_ = nullptr;
+    Publisher* publisher = nullptr;
 
     Topic* topicSteering = nullptr;
     Topic* topicBrake = nullptr;
     Topic* topicThrottle = nullptr;
+    Topic* topicButton = nullptr;
 
     DataWriter* writerSteering = nullptr;
     DataWriter* writerBrake = nullptr;
     DataWriter* writerThrottle = nullptr;
+    DataWriter* writerButton = nullptr;
 
     TypeSupport typeSteering;
     TypeSupport typeBrake;
     TypeSupport typeThrottle;
+    TypeSupport typeButton;
 
 public:
 
     RemotePublisher() : typeSteering(new SteeringMsgPubSubType()),
 			typeBrake(new BrakeMsgPubSubType()),
-			typeThrottle(new ThrottleMsgPubSubType()) {}
+			typeThrottle(new ThrottleMsgPubSubType()),
+			typeButton(new ButtonMsgPubSubType())
+	{}
 
     virtual ~RemotePublisher()
 	{
 	    if (writerSteering != nullptr)
-		publisher_->delete_datawriter(writerSteering);
-	    if (publisher_ != nullptr)
-		participant_->delete_publisher(publisher_);
+		publisher->delete_datawriter(writerSteering);
+	    if (publisher != nullptr)
+		participant->delete_publisher(publisher);
 	    if (topicSteering != nullptr)
-		participant_->delete_topic(topicSteering);
-	    DomainParticipantFactory::get_instance()->delete_participant(participant_);
+		participant->delete_topic(topicSteering);
+	    DomainParticipantFactory::get_instance()->delete_participant(participant);
 	}
 
     //!Initialize the publisher
@@ -73,54 +79,64 @@ public:
 	{
 	    DomainParticipantQos participantQos;
 	    participantQos.name("Participant_publisher");
-	    participant_ = DomainParticipantFactory::get_instance()->create_participant(0, participantQos);
-	    if (participant_ == nullptr) return false;
+	    participant = DomainParticipantFactory::get_instance()->create_participant(0, participantQos);
+	    if (participant == nullptr) return false;
 
 	    // Register the Types
-	    typeSteering.register_type(participant_);
-	    typeBrake.register_type(participant_);
-	    typeThrottle.register_type(participant_);
+	    typeSteering.register_type(participant);
+	    typeBrake.register_type(participant);
+	    typeThrottle.register_type(participant);
+	    typeButton.register_type(participant);
 
 	    // Create the Publisher
-	    publisher_ = participant_->create_publisher(PUBLISHER_QOS_DEFAULT);
-	    if (publisher_ == nullptr) return false;
+	    publisher = participant->create_publisher(PUBLISHER_QOS_DEFAULT);
+	    if (publisher == nullptr) return false;
 
 	    // Steering
-	    topicSteering = participant_->create_topic("SteeringTopic", "SteeringMsg", TOPIC_QOS_DEFAULT);
+	    topicSteering = participant->create_topic("SteeringTopic", "SteeringMsg", TOPIC_QOS_DEFAULT);
 	    if (topicSteering == nullptr) return false;
-	    writerSteering = publisher_->create_datawriter(topicSteering, DATAWRITER_QOS_DEFAULT);
+	    writerSteering = publisher->create_datawriter(topicSteering, DATAWRITER_QOS_DEFAULT);
 	    if (writerSteering == nullptr) return false;
 	
 	    // Throttle
-	    topicThrottle = participant_->create_topic("ThrottleTopic", "ThrottleMsg", TOPIC_QOS_DEFAULT);
+	    topicThrottle = participant->create_topic("ThrottleTopic", "ThrottleMsg", TOPIC_QOS_DEFAULT);
 	    if (topicThrottle == nullptr) return false;
-	    writerThrottle = publisher_->create_datawriter(topicThrottle, DATAWRITER_QOS_DEFAULT);
+	    writerThrottle = publisher->create_datawriter(topicThrottle, DATAWRITER_QOS_DEFAULT);
 	    if (writerThrottle == nullptr) return false;
 	
 	    // Brake
-	    topicBrake = participant_->create_topic("BrakeTopic", "BrakeMsg", TOPIC_QOS_DEFAULT);
+	    topicBrake = participant->create_topic("BrakeTopic", "BrakeMsg", TOPIC_QOS_DEFAULT);
 	    if (topicBrake == nullptr) return false;
-	    writerBrake = publisher_->create_datawriter(topicBrake, DATAWRITER_QOS_DEFAULT);
+	    writerBrake = publisher->create_datawriter(topicBrake, DATAWRITER_QOS_DEFAULT);
 	    if (writerBrake == nullptr) return false;
+
+	    // Button
+	    topicButton = participant->create_topic("ButtonTopic", "ButtonMsg", TOPIC_QOS_DEFAULT);
+	    if (topicButton == nullptr) return false;
+	    writerButton = publisher->create_datawriter(topicButton, DATAWRITER_QOS_DEFAULT);
+	    if (writerBrake == nullptr) return false;
+
 	    return true;
 	}
 
-    //!Send a publication
     void publishSteering(SteeringMsg& msg)
 	{
 	    writerSteering->write(&msg);
 	}
 
-    //!Send a publication
     void publishThrottle(ThrottleMsg& msg)
 	{
 	    writerThrottle->write(&msg);
 	}
 
-    //!Send a publication
     void publishBrake(BrakeMsg& msg)
 	{
 	    writerBrake->write(&msg);
+	}
+
+    void publishButton(ButtonMsg& msg)
+	{
+	    writerButton->write(&msg);
 	}
 };
 
@@ -145,6 +161,12 @@ int main(int argc, char *argv[]) {
 	BrakeMsg msg;
 	msg.brake(v);
 	remotePublisher.publishBrake(msg);
+    });
+
+    logiwheel.registerButtonCallback([&](int d){
+	ButtonMsg msg;
+	msg.index(d);
+	remotePublisher.publishButton(msg);
     });
 
     if(!remotePublisher.init())

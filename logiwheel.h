@@ -14,30 +14,43 @@ class LogiWheel {
 
 public:
 
-    using CallbackFunction = std::function<void(float)>;
+    // Navigation buttons on the steering wheel
+    static constexpr int BUTTON_LEFT = 100;
+    static constexpr int BUTTON_RIGHT = 101;
+    static constexpr int BUTTON_UP = 102;
+    static constexpr int BUTTON_DOWN = 103;
+    static constexpr char DEFAULT_DEVICE[] =
+	"/dev/input/by-id/usb-Logitech_Logitech_Racing_Wheel-event-joystick";
+
+    using AnalogueCallback = std::function<void(float)>;
+    using ButtonCallback = std::function<void(int)>;
     
-    void registerSteeringCallback(CallbackFunction cb) {
+    void registerSteeringCallback(AnalogueCallback cb) {
 	steeringCallback = cb;
     }
 
-    void registerThrottleCallback(CallbackFunction cb) {
+    void registerThrottleCallback(AnalogueCallback cb) {
 	throttleCallback = cb;
     }
 
-    void registerBrakeCallback(CallbackFunction cb) {
+    void registerBrakeCallback(AnalogueCallback cb) {
 	brakeCallback = cb;
     }
 
-    void start(std::string device = "/dev/input/by-id/usb-Logitech_Logitech_Racing_Wheel-event-joystick") {
-	if (running) return;
+    void registerButtonCallback(ButtonCallback cb) {
+	buttonCallback = cb;
+    }
+
+    bool start(std::string device = DEFAULT_DEVICE) {
+	if (running) return true;
 
         fd = open(device.c_str(), O_RDONLY);
 	
 	if (fd == -1) {
-	    perror("Could not open joystick");
-	    return;
+	    return false;
 	}
 	eventThread = std::thread(&LogiWheel::run, this);
+	return true;
     }
     
     void stop() {
@@ -63,6 +76,8 @@ private:
 		    close(fd);
 		    return;
 		}
+//		fprintf(stderr,
+//			"type = %d, code =%d, value=%d\n",event.type,event.code,event.value);
 		if (event.type == EV_ABS && event.code < ABS_TOOL_WIDTH) {
 		    int v = event.value;
 		    switch (event.code) {
@@ -75,7 +90,31 @@ private:
 		    case 2:
 			if (brakeCallback) brakeCallback(1-v/256.0);
 			break;
+		    case 16:
+			if (buttonCallback)
+			    switch (event.value) {
+			    case -1:
+				buttonCallback(BUTTON_LEFT);
+				break;
+			    case 1:
+				buttonCallback(BUTTON_RIGHT);
+				break;
+			    }
+			break;
+		    case 17:
+			if (buttonCallback)
+			    switch (event.value) {
+			    case -1:
+				buttonCallback(BUTTON_UP);
+				break;
+			    case 1:
+				buttonCallback(BUTTON_DOWN);
+				break;
+			    }
+			break;
 		    }
+		} else if ( (event.type == EV_KEY) && (event.value == 1) ){
+		    if (buttonCallback) buttonCallback(event.code - 287);
 		}
 	    } else if (r < 0) running = false;
 	}
@@ -89,9 +128,10 @@ private:
     std::thread eventThread;
     timeval timeout = {1,1};
 
-    CallbackFunction steeringCallback;
-    CallbackFunction throttleCallback;
-    CallbackFunction brakeCallback;
+    AnalogueCallback steeringCallback;
+    AnalogueCallback throttleCallback;
+    AnalogueCallback brakeCallback;
+    ButtonCallback buttonCallback;
 };
 
 #endif

@@ -1,4 +1,9 @@
-# Robot remote control using fastDDS by a logitech steering wheel
+# Remote control using fastDDS
+
+FastDDS is a realtime protocol which broadcasts to your local
+ethernet network so you can for example remote control a
+robot via WIFI. There is no need to specify an IP address. fastDDS
+subscriber find automatically the publishers.
 
 ## Prereqisites
 
@@ -35,5 +40,19 @@ Transmitter: Open a terminal and type
 Test receiver: Open another terminal and type
 
 ```
-./test_robo_msg_sub
+./demo_receiver
+```
+
+```
+Button: 102 RECEIVED.
+Button: 102 RECEIVED.
+Steering: 0 RECEIVED.
+Steering: 0.00195312 RECEIVED.
+Steering: 0.00390625 RECEIVED.
+Steering: -0.00585938 RECEIVED.
+Steering: -0.0078125 RECEIVED.
+Steering: -0.00976562 RECEIVED.
+Steering: -0.0195312 RECEIVED.
+Steering: -0.0214844 RECEIVED.
+
 ```
