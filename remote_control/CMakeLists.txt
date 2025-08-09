@@ -18,6 +18,8 @@ add_library(FastDDSMsg STATIC
 	      steering.cxx steeringPubSubTypes.cxx
 	      throttle.cxx throttlePubSubTypes.cxx )
 
+target_include_directories(FastDDSMsg PRIVATE ..)
+
 add_custom_target(
     ddsmessages
     COMMAND fastddsgen ${LIBDDSIDL}
