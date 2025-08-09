@@ -67,10 +67,26 @@ public:
 	{
 	    if (writerSteering != nullptr)
 		publisher->delete_datawriter(writerSteering);
-	    if (publisher != nullptr)
-		participant->delete_publisher(publisher);
 	    if (topicSteering != nullptr)
 		participant->delete_topic(topicSteering);
+	    
+	    if (writerBrake != nullptr)
+		publisher->delete_datawriter(writerBrake);
+	    if (topicBrake != nullptr)
+		participant->delete_topic(topicBrake);
+	    
+	    if (writerThrottle != nullptr)
+		publisher->delete_datawriter(writerThrottle);
+	    if (topicThrottle != nullptr)
+		participant->delete_topic(topicThrottle);
+	    
+	    if (writerButton != nullptr)
+		publisher->delete_datawriter(writerButton);
+	    if (topicButton != nullptr)
+		participant->delete_topic(topicButton);
+	    
+	    if (publisher != nullptr)
+		participant->delete_publisher(publisher);
 	    DomainParticipantFactory::get_instance()->delete_participant(participant);
 	}
 
@@ -123,7 +139,7 @@ public:
 	{
 	    writerSteering->write(&msg);
 	}
-
+    
     void publishThrottle(ThrottleMsg& msg)
 	{
 	    writerThrottle->write(&msg);
