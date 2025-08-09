@@ -25,10 +25,10 @@ The class `LogiWheel` has four callbacks for throttle, braking, steering
 and the buttons.
 
 ```
-    void registerSteeringCallback(CallbackFunction cb)
-    void registerThrottleCallback(CallbackFunction cb)
-    void registerBrakeCallback(CallbackFunction cb)
-    void registerButtonCallback(CallbackFunction cb)
+    void registerSteeringCallback(FloatCallback cb)
+    void registerThrottleCallback(FloatCallback cb)
+    void registerBrakeCallback(FloatCallback cb)
+    void registerButtonCallback(IntCallback cb)
 
 ```
 
