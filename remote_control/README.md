@@ -40,7 +40,7 @@ Transmitter: Open a terminal and type
 Test receiver: Open another terminal and type
 
 ```
-./demo_receiver
+./demo_subscriber
 ```
 
 ```

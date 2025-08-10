@@ -36,5 +36,5 @@ target_link_libraries(remote fastcdr fastrtps FastDDSMsg)
 
 
 # Subscriber
-add_executable(demo_receiver demo_receiver.cpp)
-target_link_libraries(demo_receiver fastcdr fastrtps FastDDSMsg)
+add_executable(demo_subscriber demo_subscriber.cpp)
+target_link_libraries(demo_subscriber fastcdr fastrtps FastDDSMsg)

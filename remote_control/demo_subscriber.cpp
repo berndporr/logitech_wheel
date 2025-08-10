@@ -32,7 +32,7 @@
 
 using namespace eprosima::fastdds::dds;
 
-class RobotSubscriber
+class DemoSubscriber
 {
 private:
 
@@ -70,6 +70,7 @@ private:
 		{
 		    if (info.valid_data)
 		    {
+			// Your callback to your application should go here
 			std::cout << "Steering: " << msg.steering()
 				  << " RECEIVED." << std::endl;
 		    }
@@ -87,12 +88,13 @@ private:
         void on_data_available(DataReader* reader) override
 	    {
 		SampleInfo info;
-		SteeringMsg msg;
+		ThrottleMsg msg;
 		if (reader->take_next_sample(&msg, &info) == ReturnCode_t::RETCODE_OK)
 		{
 		    if (info.valid_data)
 		    {
-			std::cout << "Throttle: " << msg.steering()
+			// Your callback to your application should go here
+			std::cout << "Throttle: " << msg.throttle()
 				  << " RECEIVED." << std::endl;
 		    }
 		}
@@ -109,12 +111,13 @@ private:
         void on_data_available(DataReader* reader) override
 	    {
 		SampleInfo info;
-		SteeringMsg msg;
+		BrakeMsg msg;
 		if (reader->take_next_sample(&msg, &info) == ReturnCode_t::RETCODE_OK)
 		{
 		    if (info.valid_data)
 		    {
-			std::cout << "Brake: " << msg.steering()
+			// Your callback to your application should go here
+			std::cout << "Brake: " << msg.brake()
 				  << " RECEIVED." << std::endl;
 		    }
 		}
@@ -145,13 +148,13 @@ private:
 
 public:
 
-    RobotSubscriber() : typeSteering(new SteeringMsgPubSubType()),
+    DemoSubscriber() : typeSteering(new SteeringMsgPubSubType()),
 			typeBrake(new BrakeMsgPubSubType()),
 			typeThrottle(new ThrottleMsgPubSubType()),
 			typeButton(new ButtonMsgPubSubType())
 	{}
 
-    virtual ~RobotSubscriber()
+    virtual ~DemoSubscriber()
 	{
 	    if (readerSteering != nullptr) subscriber->delete_datareader(readerSteering);
 	    if (topicSteering != nullptr) participant->delete_topic(topicSteering);
@@ -234,7 +237,7 @@ int main(int,
 {
     std::cout << "Starting subscriber." << std::endl;
 
-    RobotSubscriber mysub;
+    DemoSubscriber mysub;
     if(!mysub.init())
     {
 	std::cerr << "Could not init the subscriber." << std::endl;
