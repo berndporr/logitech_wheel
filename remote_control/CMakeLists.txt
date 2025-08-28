@@ -31,8 +31,8 @@ add_dependencies(FastDDSMsg ddsmessages)
 
 
 # Publisher
-add_executable(remote remote.cpp)
-target_link_libraries(remote fastcdr fastrtps FastDDSMsg)
+add_executable(remote_publisher remote_publisher.cpp)
+target_link_libraries(remote_publisher fastcdr fastrtps FastDDSMsg)
 
 
 # Subscriber

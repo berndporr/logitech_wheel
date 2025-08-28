@@ -34,7 +34,7 @@ make
 
 Transmitter: Open a terminal and type
 ```
-./remote
+./remote_publisher
 ```
 
 Test receiver: Open another terminal and type
