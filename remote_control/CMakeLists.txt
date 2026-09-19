@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.20)
 
 project(Steering)
 
@@ -6,6 +6,8 @@ find_package(fastcdr REQUIRED)
 find_package(fastrtps REQUIRED)
 
 set (CMAKE_CXX_STANDARD 17)
+
+set (CMAKE_EXPORT_COMPILE_COMMANDS 1)
 
 # Create a library for the message / topic
 
